@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>수능 실모 오답 복기 노트</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+
+    <h2>📝 실전 모의고사 오답 및 복기 노트</h2>
+    <form id="mosaForm">
+        <div class="form-group">
+            <label>날짜</label>
+            <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+            <label>시험 이름 (예: 6월 모평, 대성 더 프리미엄)</label>
+            <input type="text" id="examName" required>
+        </div>
+        <div class="form-group">
+            <label>과목</label>
+            <select id="subject">
+                <option value="국어">국어</option>
+                <option value="수학">수학</option>
+                <option value="영어">영어</option>
+                <option value="탐구1">탐구1</option>
+                <option value="탐구2">탐구2</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>점수 / 등급</label>
+            <input type="text" id="score" placeholder="예: 88점 / 2등급">
+        </div>
+        <div class="form-group">
+            <label>틀린 문항 번호</label>
+            <input type="text" id="wrongNum" placeholder="예: 14, 15, 21, 29, 30">
+        </div>
+        <div class="form-group">
+            <label>주요 오답 원인</label>
+            <select id="reason">
+                <option value="개념 부족">개념 부족</option>
+                <option value="실수 (계산/조건착오)">실수 (계산/조건착오)</option>
+                <option value="시간 부족">시간 부족</option>
+                <option value="발상 전환 실패">발상 전환 실패 (처음 보는 유형)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>상세 복기 및 피드백</label>
+            <textarea id="memo" rows="4" placeholder="어떤 생각으로 틀렸는지, 다음에 어떻게 고칠지 적어주세요."></textarea>
+        </div>
+        <button type="submit">기록 저장하기</button>
+    </form>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyktI4icu1-GCqeFCCHG8cedGZ9NxJ0g6xCIIXw2jyQ3EYfsEmIkcTFyARV_1K2shUV/exec"; // 여기에 아까 복사한 URL 붙여넣기
+
+        document.getElementById('mosaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                date: document.getElementById('date').value,
+                examName: document.getElementById('examName').value,
+                subject: document.getElementById('subject').value,
+                score: document.getElementById('score').value,
+                wrongNum: document.getElementById('wrongNum').value,
+                reason: document.getElementById('reason').value,
+                memo: document.getElementById('memo').value
+            };
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Google Apps Script 연동 시 CORS 우회용
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            }).then(() => {
+                alert('오답 기록이 성공적으로 저장되었습니다!');
+                document.getElementById('mosaForm').reset();
+            }).catch(error => {
+                alert('저장 중 오류가 발생했습니다.');
+                console.error('Error!', error);
+            });
+        });
+    </script>
+</body>
+</html>
