@@ -2,91 +2,809 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>수능 실모 오답 복기 노트</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실모 오답분석</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; width: 100%; font-size: 16px; }
-        button:hover { background: #45a049; }
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #1E293B;
+            --text-sub: #64748B;
+            --border-color: #E2E8F0;
+            --accent-red: #EF4444;
+            --accent-green: #10B981;
+            --accent-amber: #F59E0B;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 24px 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .config-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 100%;
+        }
+
+        .config-box input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            outline: none;
+            width: 280px;
+            font-size: 0.85rem;
+        }
+
+        .config-box button {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .config-box button:hover {
+            background: #F1F5F9;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        .form-control, select, input[type="text"], input[type="date"], input[type="number"], textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            background-color: #FAFAFA;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus, select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: #E2E8F0;
+            outline: none;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .score-badge {
+            min-width: 60px;
+            text-align: center;
+            padding: 6px 12px;
+            background-color: var(--primary);
+            color: white;
+            font-weight: 700;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .status-msg {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            display: none;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background-color: #DEF7EC;
+            color: #03543F;
+        }
+
+        .status-error {
+            background-color: #FDE8E8;
+            color: #9B1C1C;
+        }
+
+        .status-info {
+            background-color: #E1EFFE;
+            color: #1E429F;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #F1F5F9;
+            padding: 14px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card .val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-card .lbl {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+
+        .chart-box {
+            position: relative;
+            height: 240px;
+            margin-bottom: 20px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        th {
+            background-color: #F1F5F9;
+            padding: 10px 12px;
+            font-weight: 600;
+            color: var(--text-sub);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        tr:hover {
+            background-color: #F8FAFC;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: #E0E7FF;
+            color: #3730A3;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-    <h2>📝 실전 모의고사 오답 및 복기 노트</h2>
-    <form id="mosaForm">
-        <div class="form-group">
-            <label>날짜</label>
-            <input type="date" id="date" required>
+    <header>
+        <div>
+            <h1>✏️ 수험생 오답 분석 & 모의고사 통계</h1>
+            <p>실전 모의고사 피드백 입력 및 구글 스프레드시트 연동 시스템</p>
         </div>
-        <div class="form-group">
-            <label>시험 이름 (예: 6월 모평, 대성 더 프리미엄)</label>
-            <input type="text" id="examName" required>
+        <div class="config-box">
+            <span style="font-size:0.85rem; font-weight:600;">🔗 Apps Script URL:</span>
+            <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/.../exec">
+            <button onclick="saveGasUrl()">저장</button>
         </div>
-        <div class="form-group">
-            <label>과목</label>
-            <select id="subject">
-                <option value="국어">국어</option>
-                <option value="수학">수학</option>
-                <option value="영어">영어</option>
-                <option value="탐구1">탐구1</option>
-                <option value="탐구2">탐구2</option>
-            </select>
+    </header>
+
+    <div class="grid-layout">
+        <!-- 왼쪽: 피드백 입력 폼 -->
+        <div class="card">
+            <div class="card-title">📝 오답 데이터 입력</div>
+            <form id="feedbackForm">
+                <div class="row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="date">날짜</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="subject">과목</label>
+                        <select id="subject" onchange="handleSubjectChange()" required>
+                            <option value="국어">국어</option>
+                            <option value="수학">수학</option>
+                            <option value="영어">영어</option>
+                            <option value="한국사">한국사</option>
+                            <option value="한국지리">한국지리</option>
+                            <option value="세계지리">세계지리</option>
+                            <option value="중국어">중국어</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="examName">시험명</label>
+                        <select id="examName" onchange="handleExamNameChange()" required>
+                            <option value="6모">6모</option>
+                            <option value="학평">학평</option>
+                            <option value="더프">더프</option>
+                            <option value="서프">서프</option>
+                            <option value="종로">종로</option>
+                            <option value="서바이벌">서바이벌</option>
+                            <option value="전국서바이벌">전국서바이벌</option>
+                            <option value="서바이벌리부트">서바이벌리부트</option>
+                            <option value="브릿지">브릿지</option>
+                            <option value="전국브릿지">전국브릿지</option>
+                            <option value="direct">직접입력</option>
+                        </select>
+                        <input type="text" id="examNameDirect" placeholder="시험명 입력" style="display:none; margin-top:6px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="round">회차</label>
+                        <input type="number" id="round" min="1" max="100" value="1" placeholder="예: 1회차" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="score">점수 (슬라이더)</label>
+                    <div class="slider-container">
+                        <input type="range" id="score" min="0" max="100" value="80" oninput="updateScoreValue(this.value)">
+                        <div class="score-badge" id="scoreBadge">80점</div>
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="qNum">틀린 문항 번호</label>
+                        <input type="text" id="qNum" placeholder="예: 14, 22, 30" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="grade">등급 (선택)</label>
+                        <input type="text" id="grade" placeholder="예: 1등급, 2등급">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="qType">틀린 문항 유형</label>
+                    <select id="qTypeSelect" onchange="handleQTypeChange()">
+                        <!-- Dynamic options via JS -->
+                    </select>
+                    <input type="text" id="qTypeDirect" placeholder="문항 유형 직접 입력" style="display:none; margin-top:6px;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cause">오답 원인</label>
+                    <select id="cause" required>
+                        <option value="개념 미숙">개념 미숙</option>
+                        <option value="계산/실수">계산/실수</option>
+                        <option value="시간 부족">시간 부족</option>
+                        <option value="조건/발문 독해 오류">조건/발문 독해 오류</option>
+                        <option value="스킬/아이디어 미착상">스킬/아이디어 미착상</option>
+                        <option value="찍음/운">찍음/운</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="detail">상세 분석 (선택)</label>
+                    <textarea id="detail" rows="3" placeholder="어떤 생각이 잘못되었는지, 피드백 및 복습 방향 기록"></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">🚀 스프레드시트 제출 & 저장</button>
+                <div id="statusMsg" class="status-msg"></div>
+            </form>
         </div>
-        <div class="form-group">
-            <label>점수 / 등급</label>
-            <input type="text" id="score" placeholder="예: 88점 / 2등급">
+
+        <!-- 오른쪽: 실시간 통계 및 분석 차트 -->
+        <div>
+            <div class="card">
+                <div class="card-title">📊 실전 모의고사 요약 & 차트</div>
+                <div class="stats-summary">
+                    <div class="stat-card">
+                        <div class="val" id="statTotalExams">0</div>
+                        <div class="lbl">총 오답 기록 수</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="val" id="statAvgScore">0점</div>
+                        <div class="lbl">전체 평균 점수</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="val" id="statTopCause">-</div>
+                        <div class="lbl">최다 오답 원인</div>
+                    </div>
+                </div>
+
+                <div class="chart-box">
+                    <canvas id="causeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📈 과목별 평균 점수</div>
+                <div class="chart-box">
+                    <canvas id="subjectChart"></canvas>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label>틀린 문항 번호</label>
-            <input type="text" id="wrongNum" placeholder="예: 14, 15, 21, 29, 30">
+    </div>
+
+    <!-- 하단: 최근 데이터 테이블 -->
+    <div class="card">
+        <div class="card-title" style="justify-content: space-between;">
+            <span>📋 최근 오답 기록 목록 (로컬 저장소)</span>
+            <button onclick="clearLocalHistory()" style="background:#EF4444; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:0.8rem; cursor:pointer;">목록 초기화</button>
         </div>
-        <div class="form-group">
-            <label>주요 오답 원인</label>
-            <select id="reason">
-                <option value="개념 부족">개념 부족</option>
-                <option value="실수 (계산/조건착오)">실수 (계산/조건착오)</option>
-                <option value="시간 부족">시간 부족</option>
-                <option value="발상 전환 실패">발상 전환 실패 (처음 보는 유형)</option>
-            </select>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th>과목</th>
+                        <th>시험명</th>
+                        <th>회차</th>
+                        <th>점수</th>
+                        <th>틀린번호</th>
+                        <th>문항유형</th>
+                        <th>오답원인</th>
+                        <th>등급</th>
+                        <th>삭제</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <tr><td colspan="10" style="text-align:center; color:var(--text-sub);">저장된 오답 기록이 없습니다.</td></tr>
+                </tbody>
+            </table>
         </div>
-        <div class="form-group">
-            <label>상세 복기 및 피드백</label>
-            <textarea id="memo" rows="4" placeholder="어떤 생각으로 틀렸는지, 다음에 어떻게 고칠지 적어주세요."></textarea>
-        </div>
-        <button type="submit">기록 저장하기</button>
-    </form>
+    </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyktI4icu1-GCqeFCCHG8cedGZ9NxJ0g6xCIIXw2jyQ3EYfsEmIkcTFyARV_1K2shUV/exec"; // 여기에 아까 복사한 URL 붙여넣기
+        // 과목별 문제 유형 데이터 정의
+        const qTypesBySubject = {
+            "국어": ["언어", "매체", "독서론", "독서-내용일치", "독서-내용추론", "독서-보기문제", "독서-어휘", "문학-표현상의특징", "문학-내용일치", "문학-내용추론", "문학-외적준거", "direct"],
+            "수학": ["계산", "수1-각변환", "수1-삼각함수", "수1-삼각함수활용", "수1-지수로그", "수1-지수로그-그래프", "수1-수열", "수2-극한", "수2-그래프개형추론", "미적-급수", "미적-계산", "미적-음함수/매개변수", "미적-합성함수", "미적-적분", "direct"],
+            "영어": ["듣기", "18-19", "주제-제목-요지", "단어", "흐름(35)", "빈칸", "순서", "삽입", "틀말유", "문법", "direct"],
+            "한국사": ["direct"],
+            "한국지리": ["direct"],
+            "세계지리": ["direct"],
+            "중국어": ["direct"]
+        };
 
-        document.getElementById('mosaForm').addEventListener('submit', function(e) {
+        // 로컬 데이터 저장소
+        let errorHistory = JSON.parse(localStorage.getItem('errorHistory') || '[]');
+        let causeChartInstance = null;
+        let subjectChartInstance = null;
+
+        // 페이지 로드 시 초기화
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('date').valueAsDate = new Date();
+            const savedUrl = localStorage.getItem('gasUrl') || '';
+            document.getElementById('gasUrl').value = savedUrl;
+
+            handleSubjectChange();
+            renderHistory();
+            renderCharts();
+        });
+
+        // Apps Script URL 저장
+        function saveGasUrl() {
+            const url = document.getElementById('gasUrl').value.trim();
+            localStorage.setItem('gasUrl', url);
+            showStatus('Google Apps Script URL이 저장되었습니다.', 'info');
+        }
+
+        // 점수 슬라이더 업데이트
+        function updateScoreValue(val) {
+            document.getElementById('scoreBadge').innerText = val + '점';
+        }
+
+        // 시험명 직접 입력 제어
+        function handleExamNameChange() {
+            const val = document.getElementById('examName').value;
+            const directInput = document.getElementById('examNameDirect');
+            if (val === 'direct') {
+                directInput.style.display = 'block';
+                directInput.required = true;
+            } else {
+                directInput.style.display = 'none';
+                directInput.required = false;
+            }
+        }
+
+        // 과목 변경에 따른 틀린 문항 유형 변경
+        function handleSubjectChange() {
+            const subject = document.getElementById('subject').value;
+            const qTypeSelect = document.getElementById('qTypeSelect');
+            const types = qTypesBySubject[subject] || ["direct"];
+
+            qTypeSelect.innerHTML = '';
+            types.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.innerText = (t === 'direct') ? '직접입력' : t;
+                qTypeSelect.appendChild(opt);
+            });
+
+            handleQTypeChange();
+        }
+
+        // 틀린 문항 유형 직접 입력 제어
+        function handleQTypeChange() {
+            const val = document.getElementById('qTypeSelect').value;
+            const directInput = document.getElementById('qTypeDirect');
+            if (val === 'direct') {
+                directInput.style.display = 'block';
+                directInput.required = true;
+            } else {
+                directInput.style.display = 'none';
+                directInput.required = false;
+            }
+        }
+
+        // 상태 메시지 표시
+        function showStatus(msg, type) {
+            const el = document.getElementById('statusMsg');
+            el.innerText = msg;
+            el.className = 'status-msg status-' + type;
+            el.style.display = 'block';
+            setTimeout(() => {
+                if(type !== 'info') el.style.display = 'none';
+            }, 5000);
+        }
+
+        // 폼 제출 이벤트
+        document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
+            // 값 수집
+            const date = document.getElementById('date').value;
+            const subject = document.getElementById('subject').value;
+
+            const examSelect = document.getElementById('examName').value;
+            const examName = (examSelect === 'direct') ? document.getElementById('examNameDirect').value : examSelect;
+
+            const round = document.getElementById('round').value + '회차';
+            const score = document.getElementById('score').value;
+            const qNum = document.getElementById('qNum').value;
+
+            const qTypeSelect = document.getElementById('qTypeSelect').value;
+            const qType = (qTypeSelect === 'direct') ? document.getElementById('qTypeDirect').value : qTypeSelect;
+
+            const cause = document.getElementById('cause').value;
+            const detail = document.getElementById('detail').value;
+            const grade = document.getElementById('grade').value;
+
             const formData = {
-                date: document.getElementById('date').value,
-                examName: document.getElementById('examName').value,
-                subject: document.getElementById('subject').value,
-                score: document.getElementById('score').value,
-                wrongNum: document.getElementById('wrongNum').value,
-                reason: document.getElementById('reason').value,
-                memo: document.getElementById('memo').value
+                date,
+                subject,
+                examName,
+                round,
+                score: Number(score),
+                qNum,
+                qType,
+                cause,
+                detail,
+                grade
             };
 
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors', // Google Apps Script 연동 시 CORS 우회용
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            }).then(() => {
-                alert('오답 기록이 성공적으로 저장되었습니다!');
-                document.getElementById('mosaForm').reset();
-            }).catch(error => {
-                alert('저장 중 오류가 발생했습니다.');
-                console.error('Error!', error);
-            });
+            // 1. 로컬 저장
+            errorHistory.unshift(formData);
+            localStorage.setItem('errorHistory', JSON.stringify(errorHistory));
+            renderHistory();
+            renderCharts();
+
+            // 2. 구글 스프레드시트 연동 전송
+            const gasUrl = document.getElementById('gasUrl').value.trim();
+            if (gasUrl) {
+                showStatus('스프레드시트에 데이터를 전송 중입니다...', 'info');
+                try {
+                    // Apps Script no-cors 요청 처리
+                    await fetch(gasUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    showStatus('✅ 로컬 및 스프레드시트에 성공적으로 저장되었습니다!', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showStatus('⚠️ 로컬에는 저장되었으나, 스프레드시트 전송에 실패했습니다. (URL 확인 필요)', 'error');
+                }
+            } else {
+                showStatus('✅ 로컬에 저장되었습니다. (스프레드시트 URL 입력 시 구글 시트 자동 전송)', 'success');
+            }
+
+            // 입력 양식 일부 리셋
+            document.getElementById('qNum').value = '';
+            document.getElementById('detail').value = '';
         });
+
+        // 로컬 오답 히스토리 렌더링
+        function renderHistory() {
+            const tbody = document.getElementById('historyTableBody');
+            if (errorHistory.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-sub);">저장된 오답 기록이 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = errorHistory.map((item, idx) => `
+                <tr>
+                    <td>${item.date}</td>
+                    <td><span class="tag">${item.subject}</span></td>
+                    <td>${item.examName}</td>
+                    <td>${item.round}</td>
+                    <td><b>${item.score}점</b></td>
+                    <td>${item.qNum}</td>
+                    <td>${item.qType}</td>
+                    <td><span style="color:${getCauseColor(item.cause)}; font-weight:600;">${item.cause}</span></td>
+                    <td>${item.grade || '-'}</td>
+                    <td><button class="btn-delete" onclick="deleteItem(${idx})">✕</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function getCauseColor(cause) {
+            switch(cause) {
+                case '개념 미숙': return '#EF4444';
+                case '계산/실수': return '#F59E0B';
+                case '시간 부족': return '#3B82F6';
+                default: return '#6B7280';
+            }
+        }
+
+        function deleteItem(idx) {
+            if(confirm('이 기록을 삭제하시겠습니까?')) {
+                errorHistory.splice(idx, 1);
+                localStorage.setItem('errorHistory', JSON.stringify(errorHistory));
+                renderHistory();
+                renderCharts();
+            }
+        }
+
+        function clearLocalHistory() {
+            if(confirm('모든 로컬 기록을 삭제하시겠습니까?')) {
+                errorHistory = [];
+                localStorage.removeItem('errorHistory');
+                renderHistory();
+                renderCharts();
+            }
+        }
+
+        // 통계 및 차트 업데이트
+        function renderCharts() {
+            const total = errorHistory.length;
+            document.getElementById('statTotalExams').innerText = total;
+
+            if (total === 0) {
+                document.getElementById('statAvgScore').innerText = '0점';
+                document.getElementById('statTopCause').innerText = '-';
+                if(causeChartInstance) causeChartInstance.destroy();
+                if(subjectChartInstance) subjectChartInstance.destroy();
+                return;
+            }
+
+            // 평균 점수
+            const avg = (errorHistory.reduce((acc, curr) => acc + Number(curr.score), 0) / total).toFixed(1);
+            document.getElementById('statAvgScore').innerText = avg + '점';
+
+            // 오답 원인 집계
+            const causeCounts = {};
+            errorHistory.forEach(item => {
+                causeCounts[item.cause] = (causeCounts[item.cause] || 0) + 1;
+            });
+
+            let topCause = '-';
+            let maxCount = 0;
+            for (let c in causeCounts) {
+                if (causeCounts[c] > maxCount) {
+                    maxCount = causeCounts[c];
+                    topCause = c;
+                }
+            }
+            document.getElementById('statTopCause').innerText = topCause;
+
+            // 과목별 평균 점수 집계
+            const subjectScores = {};
+            const subjectCounts = {};
+            errorHistory.forEach(item => {
+                subjectScores[item.subject] = (subjectScores[item.subject] || 0) + Number(item.score);
+                subjectCounts[item.subject] = (subjectCounts[item.subject] || 0) + 1;
+            });
+
+            const subjectAvgs = {};
+            for (let s in subjectScores) {
+                subjectAvgs[s] = (subjectScores[s] / subjectCounts[s]).toFixed(1);
+            }
+
+            // Chart 1: 오답 원인 파이 차트
+            const ctxCause = document.getElementById('causeChart').getContext('2d');
+            if (causeChartInstance) causeChartInstance.destroy();
+            causeChartInstance = new Chart(ctxCause, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(causeCounts),
+                    datasets: [{
+                        data: Object.values(causeCounts),
+                        backgroundColor: ['#EF4444', '#F59E0B', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', '#6B7280']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        title: { display: true, text: '오답 원인 분포' }
+                    }
+                }
+            });
+
+            // Chart 2: 과목별 평균 점수 바 차트
+            const ctxSubject = document.getElementById('subjectChart').getContext('2d');
+            if (subjectChartInstance) subjectChartInstance.destroy();
+            subjectChartInstance = new Chart(ctxSubject, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(subjectAvgs),
+                    datasets: [{
+                        label: '평균 점수',
+                        data: Object.values(subjectAvgs),
+                        backgroundColor: '#4F46E5'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 0, max: 100 }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
+'''
+
+with open('mock_exam_error_analysis.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("HTML file created successfully.")
