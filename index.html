@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>오답노트 & 성적 분석 시스템</title>
-  <!-- 그래프 생성을 위한 Chart.js 라이브러리 -->
+  <!-- Chart.js 라이브러리 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: 'Apple SD Gothic Neo', Arial, sans-serif; max-width: 650px; margin: 20px auto; padding: 15px; color: #333; line-height: 1.5; }
+    body { font-family: 'Apple SD Gothic Neo', Arial, sans-serif; max-width: 680px; margin: 20px auto; padding: 15px; color: #333; line-height: 1.5; }
     h2 { text-align: center; color: #2c3e50; }
     .tab-buttons { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
     .tab-btn { flex: 1; padding: 10px; border: none; background: #f1f1f1; cursor: pointer; font-weight: bold; font-size: 14px; }
@@ -17,7 +17,6 @@
     label { font-weight: bold; display: block; margin-bottom: 6px; }
     input[type="text"], input[type="number"], input[type="date"], select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
     
-    /* 슬라이더 스타일 */
     .slider-container { display: flex; align-items: center; gap: 12px; }
     .slider-container input[type="range"] { flex: 1; cursor: pointer; }
     .slider-value { font-weight: bold; width: 50px; text-align: right; color: #2e7d32; font-size: 15px; }
@@ -40,6 +39,7 @@
     
     .custom-input { margin-top: 6px; display: none; }
     .chart-box { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 20px; }
+    .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -48,7 +48,7 @@
 
   <div class="tab-buttons">
     <button class="tab-btn active" onclick="switchTab('inputTab')">✏️ 시험 입력</button>
-    <button class="tab-btn" onclick="switchTab('loadTab')">📊 기록 및 성적 분석</button>
+    <button class="tab-btn" onclick="switchTab('loadTab')">📊 성적 & 오답 분석</button>
   </div>
 
   <!-- [탭 1] 입력 폼 -->
@@ -106,7 +106,7 @@
       </div>
     </div>
 
-    <!-- 점수 슬라이더 (원점수) -->
+    <!-- 점수 슬라이더 -->
     <div class="form-group">
       <label>💯 내 점수 (원점수 슬라이더)</label>
       <div class="slider-container">
@@ -124,7 +124,7 @@
       </div>
     </div>
 
-    <!-- 1컷 입력 및 예상 등급 표시 -->
+    <!-- 1컷 입력 및 예상 등급 -->
     <div class="form-group">
       <label>🥇 1등급 컷 점수 입력 (선택)</label>
       <input type="number" id="cut1" placeholder="예: 88" oninput="calculateGrade()">
@@ -140,26 +140,67 @@
     <button type="button" class="btn-submit" onclick="submitData()">💾 저장하기</button>
   </div>
 
-  <!-- [탭 2] 기존 기록 및 시각화 그래프 -->
+  <!-- [탭 2] 분석 및 기록 -->
   <div id="loadTab" style="display: none;">
-    <button class="btn-load" onclick="fetchRecords()">🔄 기존 기록 불러오기 / 그래프 새로고침</button>
+    <button class="btn-load" onclick="fetchRecords()">🔄 기존 기록 불러오기 / 새로고침</button>
     
-    <!-- 성적 시각화 그래프 영역 -->
+    <!-- 1. 성적 추이 그래프 (꺾은선) -->
     <div class="chart-box">
-      <label style="text-align: center; font-size: 16px; margin-bottom: 10px;">📈 과목별 성적 및 1컷 추이 그래프</label>
-      <div style="margin-bottom: 10px;">
-        <select id="chartSubjectFilter" onchange="renderChart()">
-          <option value="ALL">전체 과목 보기</option>
-          <option value="국어">국어</option>
-          <option value="수학">수학</option>
-          <option value="영어">영어</option>
-          <option value="한국사">한국사</option>
-          <option value="한국지리">한국지리</option>
-          <option value="세계지리">세계지리</option>
-          <option value="중국어">중국어</option>
-        </select>
+      <label style="font-size: 16px; margin-bottom: 10px; text-align: center;">📈 과목 및 모드별 성적 추이</label>
+      <div class="filter-grid">
+        <div>
+          <label style="font-size: 12px;">과목 필터</label>
+          <select id="lineSubjectFilter" onchange="renderLineChart()">
+            <option value="ALL">전체 과목</option>
+            <option value="국어">국어</option>
+            <option value="수학">수학</option>
+            <option value="영어">영어</option>
+            <option value="한국사">한국사</option>
+            <option value="한국지리">한국지리</option>
+            <option value="세계지리">세계지리</option>
+            <option value="중국어">중국어</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 12px;">시험 모드 필터</label>
+          <select id="lineModeFilter" onchange="renderLineChart()">
+            <option value="ALL">전체 (일반 + 하프)</option>
+            <option value="standard">일반 모의고사만 보기</option>
+            <option value="half">하프 모의고사만 보기</option>
+          </select>
+        </div>
       </div>
-      <canvas id="scoreChart" height="200"></canvas>
+      <canvas id="scoreLineChart" height="180"></canvas>
+    </div>
+
+    <!-- 2. 오답 유형 분석 그래프 (원그래프) -->
+    <div class="chart-box">
+      <label style="font-size: 16px; margin-bottom: 10px; text-align: center;">🍩 과목별 오답 유형 비율 분석</label>
+      <div class="filter-grid">
+        <div>
+          <label style="font-size: 12px;">과목 선택</label>
+          <select id="pieSubjectFilter" onchange="renderPieChart()">
+            <option value="국어">국어</option>
+            <option value="수학">수학</option>
+            <option value="영어">영어</option>
+            <option value="한국지리">한국지리</option>
+            <option value="세계지리">세계지리</option>
+            <option value="한국사">한국사</option>
+            <option value="중국어">중국어</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 12px;">조회 시작일</label>
+          <input type="date" id="startDate" onchange="renderPieChart()">
+        </div>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 12px;">조회 종료일</label>
+        <input type="date" id="endDate" onchange="renderPieChart()">
+      </div>
+      <div style="max-width: 320px; margin: 0 auto;">
+        <canvas id="typePieChart"></canvas>
+      </div>
     </div>
 
     <div id="recordsContainer">
@@ -168,19 +209,29 @@
   </div>
 
   <script>
-    // ⚠️ 배포한 Apps Script 웹 앱 URL을 붙여넣으세요!
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJFVzJNhTYig-gah2HBRnT3_K0GsAgpvtdJ_NU8Ai89gK2JzaggD8WaemQj7ujaDVu/exec';
 
+    // 과목별 문제 유형 데이터 정의 (한국지리, 세계지리 추가 반영)
     const qTypeOptions = {
       '국어': ['언어', '매체', '독서론', '독서-내용일치', '독서-내용추론', '독서-보기문제', '독서-어휘', '문학-표현상의특징', '문학-내용일치', '문학-내용추론', '문학-외적준거'],
       '수학': ['계산', '수1-각변환', '수1-삼각함수', '수1-삼각함수활용', '수1-지수로그', '수1-지수로그-그래프', '수1-수열', '수2-극한', '수2-그래프개형추론', '미적-급수', '미적-계산', '미적-음함수/매개변수', '미적-합성함수', '미적-적분', 'custom'],
-      '영어': ['듣기', '18-19', '주제-제목-요지', '단어', '흐름(35)', '빈칸', '순서', '삽입', '틀말유', '문법']
+      '영어': ['듣기', '18-19', '주제-제목-요지', '단어', '흐름(35)', '빈칸', '순서', '삽입', '틀말유', '문법'],
+      '한국지리': ['위치/지리정보/고지도', '산지/하천/해안/화산/카르스트', '기후', '기후변화', '교통/도시발달', '지역 개발/자원', '농업/공업', '인구분포/이동/외국인', '지역지리', 'custom'],
+      '세계지리': ['고지도/세계화', '기후', '지형', '종교', '인구', '도시화/도시체계', '식량/가축 자원', '에너지', '몬순/오세아니아', '건조/북아프리카', '유럽/북아메리카', '사하라이남/라틴', '지역지리', 'custom']
     };
 
     let globalFetchedData = null;
-    let scoreChartInstance = null;
+    let lineChartInstance = null;
+    let pieChartInstance = null;
 
-    document.getElementById('date').value = new Date().toISOString().substring(0, 10);
+    // 기본 날짜 설정 (최근 1년 범위 기본 지정)
+    const today = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+    
+    document.getElementById('date').value = today.toISOString().substring(0, 10);
+    document.getElementById('startDate').value = oneYearAgo.toISOString().substring(0, 10);
+    document.getElementById('endDate').value = today.toISOString().substring(0, 10);
 
     function switchTab(tabId) {
       document.getElementById('inputTab').style.display = tabId === 'inputTab' ? 'block' : 'none';
@@ -196,11 +247,7 @@
     function toggleMode() {
       const mode = document.getElementById('mode').value;
       const maxScoreInput = document.getElementById('maxScore');
-      if (mode === 'standard') {
-        maxScoreInput.value = 100;
-      } else {
-        maxScoreInput.value = 50;
-      }
+      maxScoreInput.value = (mode === 'standard') ? 100 : 50;
       updateScoreValue();
       calculateGrade();
     }
@@ -217,7 +264,6 @@
       }
     }
 
-    // 과목별 자동 등급 산출 로직
     function calculateGrade() {
       const subject = document.getElementById('subject').value;
       const raw = Number(document.getElementById('rawScore').value);
@@ -230,31 +276,11 @@
       }
 
       const cut1 = Number(cut1Val);
-      let cut2 = 0;
-
-      // 과목별 2컷 계산 감점폭 정의
-      const dropMap = {
-        '국어': 5,
-        '수학': 8,
-        '영어': 10,
-        '한국지리': 3,
-        '세계지리': 3,
-        '한국사': 5,
-        '중국어': 5
-      };
-
+      const dropMap = { '국어': 5, '수학': 8, '영어': 10, '한국지리': 3, '세계지리': 3, '한국사': 5, '중국어': 5 };
       const drop = dropMap[subject] || 5;
-      cut2 = cut1 - drop;
+      const cut2 = cut1 - drop;
 
-      let grade = '';
-      if (raw >= cut1) {
-        grade = '1등급';
-      } else if (raw >= cut2) {
-        grade = '2등급';
-      } else {
-        grade = '3등급 이하';
-      }
-
+      let grade = (raw >= cut1) ? '1등급' : (raw >= cut2 ? '2등급' : '3등급 이하');
       previewEl.innerText = `예상 등급: ${grade} (1컷: ${cut1}점 / 2컷: ${cut2}점 기준)`;
       return grade;
     }
@@ -278,6 +304,7 @@
       const options = qTypeOptions[subject];
 
       if (!options) {
+        // 옵션 목록이 없는 경우(한국사, 중국어 등) 직접입력 칸 표시
         qTypeSelect.style.display = 'none';
         qTypeCustom.style.display = 'block';
         qTypeCustom.value = '';
@@ -301,7 +328,7 @@
       box.innerHTML = `
         <button type="button" class="btn-del" onclick="this.parentElement.remove()">삭제</button>
         <div style="display: flex; gap: 6px; margin-bottom: 6px;">
-          <input type="text" class="qNum" placeholder="문항번호(예: 15번)" style="width: 30%;">
+          <input type="text" class="qNum" placeholder="문항번호" style="width: 30%;">
           <input type="text" class="myAns" placeholder="내 답" style="width: 35%;">
           <input type="text" class="correctAns" placeholder="정답" style="width: 35%;">
         </div>
@@ -331,10 +358,7 @@
         return;
       }
 
-      // 회차가 있는 경우 시험명 뒤에 붙임 (예: 더프 2회차)
-      if (roundVal) {
-        examName += ` ${roundVal}회차`;
-      }
+      if (roundVal) examName += ` ${roundVal}회차`;
 
       const calculatedGrade = calculateGrade();
       const cut1Val = document.getElementById('cut1').value;
@@ -406,13 +430,13 @@
         }
 
         globalFetchedData = res.data;
-        renderChart();
+        renderLineChart();
+        renderPieChart();
 
         let html = '';
         const scoresReversed = [...globalFetchedData.scores].reverse();
 
         scoresReversed.forEach(row => {
-          // 컬럼 구조: [examId, date, examName, modeStr, subject, rawScore, maxScore, percentage, cut1, grade]
           const [examId, date, examName, modeStr, subject, rawScore, maxScore, percentage, cut1, grade] = row;
           
           const wrongList1 = globalFetchedData.sheet1Data.filter(q => q[0] === examId);
@@ -445,31 +469,36 @@
       .catch(err => container.innerHTML = '<p style="color:red; text-align:center;">불러오기 실패: ' + err + '</p>');
     }
 
-    // Chart.js 성적 시각화 그래프 생성 함수
-    function renderChart() {
+    // 1. 성적 추이 꺾은선 그래프 (일반/하프 분리 필터 지원)
+    function renderLineChart() {
       if (!globalFetchedData || !globalFetchedData.scores) return;
 
-      const filterSubject = document.getElementById('chartSubjectFilter').value;
-      let scores = [...globalFetchedData.scores];
+      const filterSubject = document.getElementById('lineSubjectFilter').value;
+      const filterMode = document.getElementById('lineModeFilter').value;
 
-      // 날짜 순 정렬 (오래된 것 -> 최근 것)
+      let scores = [...globalFetchedData.scores];
       scores.sort((a, b) => new Date(a[1]) - new Date(b[1]));
 
+      // 과목 필터링
       if (filterSubject !== 'ALL') {
         scores = scores.filter(s => s[4] === filterSubject);
+      }
+
+      // 모드 필터링 (standard: 일반모의고사, half: 하프/추가모드)
+      if (filterMode === 'standard') {
+        scores = scores.filter(s => s[3] === '일반모의고사');
+      } else if (filterMode === 'half') {
+        scores = scores.filter(s => s[3] === '하프/추가모드');
       }
 
       const labels = scores.map(s => `${s[2]} (${s[4]})`);
       const myScores = scores.map(s => Number(s[5]));
       const cut1Scores = scores.map(s => (s[8] && s[8] !== '-') ? Number(s[8]) : null);
 
-      const ctx = document.getElementById('scoreChart').getContext('2d');
+      const ctx = document.getElementById('scoreLineChart').getContext('2d');
+      if (lineChartInstance) lineChartInstance.destroy();
 
-      if (scoreChartInstance) {
-        scoreChartInstance.destroy();
-      }
-
-      scoreChartInstance = new Chart(ctx, {
+      lineChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
@@ -496,11 +525,81 @@
         },
         options: {
           responsive: true,
-          plugins: {
-            legend: { position: 'top' }
+          plugins: { legend: { position: 'top' } },
+          scales: { y: { min: 0, max: 100 } }
+        }
+      });
+    }
+
+    // 2. 오답 유형 원그래프 (과목별/기간별)
+    function renderPieChart() {
+      if (!globalFetchedData) return;
+
+      const targetSubject = document.getElementById('pieSubjectFilter').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      const allWrongData = [...globalFetchedData.sheet1Data, ...globalFetchedData.sheet2Data];
+      const typeCounts = {};
+
+      allWrongData.forEach(q => {
+        // q 구조: [examId, date, examName, subject, qNum, myAns, correctAns, reason]
+        const qDate = q[1] ? q[1].substring(0, 10) : '';
+        const qSubject = q[3];
+        const reason = q[7] || '';
+
+        // 과목 및 날짜 기간 검증
+        if (qSubject === targetSubject && qDate >= startDate && qDate <= endDate) {
+          // [유형: xxx] 패턴 추출
+          const match = reason.match(/\[유형:\s*(.*?)\]/);
+          const typeName = match ? match[1].trim() : '기타/미지정';
+          typeCounts[typeName] = (typeCounts[typeName] || 0) + 1;
+        }
+      });
+
+      const labels = Object.keys(typeCounts);
+      const dataValues = Object.values(typeCounts);
+
+      const ctx = document.getElementById('typePieChart').getContext('2d');
+      if (pieChartInstance) pieChartInstance.destroy();
+
+      if (labels.length === 0) {
+        // 해당 기간/과목에 오답 데이터가 없는 경우
+        pieChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['데이터 없음'],
+            datasets: [{ data: [1], backgroundColor: ['#e0e0e0'] }]
           },
-          scales: {
-            y: { min: 0, max: 100 }
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'bottom' },
+              tooltip: { enabled: false }
+            }
+          }
+        });
+        return;
+      }
+
+      const bgColors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+        '#FF9F40', '#E7E9ED', '#8AC926', '#1982C4', '#6A4C93'
+      ];
+
+      pieChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: dataValues,
+            backgroundColor: bgColors.slice(0, labels.length)
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' }
           }
         }
       });
