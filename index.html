@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오답노트 & 성적 관리</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; color: #333; }
+    .tab-buttons { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: #f1f1f1; cursor: pointer; font-weight: bold; }
+    .tab-btn.active { background: #4CAF50; color: white; }
+    .form-group { margin-bottom: 12px; }
+    label { font-weight: bold; display: block; margin-bottom: 4px; }
+    input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    .mode-container { background: #eef7ff; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #bce0fd; }
+    .q-box { border: 1px dashed #aaa; padding: 10px; margin-bottom: 10px; border-radius: 4px; background: #fafafa; }
+    button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; }
+    .btn-submit { background-color: #4CAF50; color: white; width: 100%; font-size: 15px; margin-top: 10px; }
+    .btn-add { background-color: #2196F3; color: white; margin-bottom: 10px; }
+    .btn-load { background-color: #FF9800; color: white; width: 100%; margin-bottom: 15px; }
+    .btn-del { background-color: #f44336; color: white; padding: 4px 8px; float: right; font-size: 12px; }
+    .record-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 6px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .record-header { font-weight: bold; color: #1976D2; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; font-size: 15px; }
+    .score-badge { background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>📝 오답노트 & 성적 관리</h2>
+
+  <div class="tab-buttons">
+    <button class="tab-btn active" onclick="switchTab('inputTab')">✏️ 시험 입력</button>
+    <button class="tab-btn" onclick="switchTab('loadTab')">📂 기존 기록 불러오기</button>
+  </div>
+
+  <!-- 입력 탭 -->
+  <div id="inputTab">
+    <div class="mode-container">
+      <label>📌 시험 모드 선택</label>
+      <select id="mode" onchange="toggleMode()">
+        <option value="standard">일반 모의고사 (100점 만점 -> 시트1 저장)</option>
+        <option value="half">추가 모드 / 하프모의고사 (만점 자유 설정 -> 시트2 저장)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>날짜</label>
+      <input type="date" id="date">
+    </div>
+
+    <div class="form-group">
+      <label>시험명</label>
+      <input type="text" id="examName" placeholder="예: 6월 모의평가 / 하프모의고사 1회">
+    </div>
+
+    <div class="form-group">
+      <label>과목</label>
+      <input type="text" id="subject" placeholder="예: 국어, 수학, 영어 등">
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <div class="form-group" style="flex: 1;">
+        <label>내 점수 (원점수)</label>
+        <input type="number" id="rawScore" placeholder="예: 42">
+      </div>
+      <div class="form-group" style="flex: 1;">
+        <label>시험 만점</label>
+        <input type="number" id="maxScore" value="100">
+      </div>
+    </div>
+
+    <hr style="margin: 15px 0;">
+    <label>❌ 틀린 문제 입력</label>
+    <button type="button" class="btn-add" onclick="addQuestionBox()">+ 틀린 문제 추가</button>
+    <div id="questionsContainer"></div>
+
+    <button type="button" class="btn-submit" onclick="submitData()">💾 저장하기</button>
+  </div>
+
+  <!-- 불러오기 탭 -->
+  <div id="loadTab" style="display: none;">
+    <button class="btn-load" onclick="fetchRecords()">🔄 기존 기록 불러오기 / 새로고침</button>
+    <div id="recordsContainer">
+      <p style="color: #777; text-align: center;">불러오기 버튼을 누르면 기록을 가져옵니다.</p>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ 여기에 배포한 Google Apps Script 웹 앱 URL을 붙여넣으세요!
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyegzUO_gXZo9ea9_dbBcCS56Si4se4w3pAKuEEiQMwG9nSAVnrViC1Ssu5d6e4-bwS/exec';
+
+    document.getElementById('date').value = new Date().toISOString().substring(0, 10);
+
+    function switchTab(tabId) {
+      document.getElementById('inputTab').style.display = tabId === 'inputTab' ? 'block' : 'none';
+      document.getElementById('loadTab').style.display = tabId === 'loadTab' ? 'block' : 'none';
+      
+      const btns = document.querySelectorAll('.tab-btn');
+      btns[0].classList.toggle('active', tabId === 'inputTab');
+      btns[1].classList.toggle('active', tabId === 'loadTab');
+
+      if (tabId === 'loadTab') fetchRecords();
+    }
+
+    function toggleMode() {
+      const mode = document.getElementById('mode').value;
+      document.getElementById('maxScore').value = (mode === 'standard') ? 100 : 50;
+    }
+
+    function addQuestionBox() {
+      const container = document.getElementById('questionsContainer');
+      const box = document.createElement('div');
+      box.className = 'q-box';
+      box.innerHTML = `
+        <button type="button" class="btn-del" onclick="this.parentElement.remove()">삭제</button>
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <input type="text" class="qNum" placeholder="문항번호" style="width: 35%;">
+          <input type="text" class="myAns" placeholder="내 답" style="width: 30%;">
+          <input type="text" class="correctAns" placeholder="정답" style="width: 30%;">
+        </div>
+        <textarea class="reason" placeholder="오답 원인 / 개념 정리" rows="2"></textarea>
+      `;
+      container.appendChild(box);
+    }
+
+    function submitData() {
+      const examName = document.getElementById('examName').value;
+      const rawScore = document.getElementById('rawScore').value;
+
+      if (!examName || rawScore === '') {
+        alert('시험명과 점수를 입력해주세요.');
+        return;
+      }
+
+      const wrongQuestions = [];
+      document.querySelectorAll('.q-box').forEach(box => {
+        wrongQuestions.push({
+          qNum: box.querySelector('.qNum').value,
+          myAns: box.querySelector('.myAns').value,
+          correctAns: box.querySelector('.correctAns').value,
+          reason: box.querySelector('.reason').value
+        });
+      });
+
+      const payload = {
+        mode: document.getElementById('mode').value,
+        date: document.getElementById('date').value,
+        examName: examName,
+        subject: document.getElementById('subject').value,
+        rawScore: rawScore,
+        maxScore: document.getElementById('maxScore').value,
+        wrongQuestions: wrongQuestions
+      };
+
+      // Google Apps Script로 POST 전송
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) {
+          document.getElementById('examName').value = '';
+          document.getElementById('rawScore').value = '';
+          document.getElementById('questionsContainer').innerHTML = '';
+        }
+      })
+      .catch(err => alert('저장 중 오류가 발생했습니다: ' + err));
+    }
+
+    function fetchRecords() {
+      const container = document.getElementById('recordsContainer');
+      container.innerHTML = '<p style="text-align:center;">기록을 불러오는 중...</p>';
+
+      fetch(APPS_SCRIPT_URL)
+      .then(res => res.json())
+      .then(res => {
+        if (!res.success || !res.data.scores || res.data.scores.length === 0) {
+          container.innerHTML = '<p style="color:#777; text-align:center;">저장된 시험 기록이 없습니다.</p>';
+          return;
+        }
+
+        const data = res.data;
+        let html = '';
+        const scoresReversed = [...data.scores].reverse();
+
+        scoresReversed.forEach(row => {
+          const [examId, date, examName, modeStr, subject, rawScore, maxScore, percentage] = row;
+          
+          const wrongList1 = data.sheet1Data.filter(q => q[0] === examId);
+          const wrongList2 = data.sheet2Data.filter(q => q[0] === examId);
+          const wrongList = [...wrongList1, ...wrongList2];
+
+          html += `
+            <div class="record-card">
+              <div class="record-header">[${modeStr}] ${examName} (${subject || '과목 미기재'})</div>
+              <div>📅 날짜: ${date ? date.substring(0, 10) : '-'}</div>
+              <div>📊 점수: <span class="score-badge">${rawScore}점 / ${maxScore}점 (${percentage})</span></div>
+              <div style="margin-top: 8px; font-weight: bold;">❌ 오답 목록 (${wrongList.length}개):</div>
+              <ul style="margin: 4px 0; padding-left: 20px; font-size: 13px; color: #444;">
+          `;
+
+          if (wrongList.length === 0) {
+            html += `<li>기록된 오답 문제가 없습니다.</li>`;
+          } else {
+            wrongList.forEach(q => {
+              html += `<li><b>${q[4]}</b> (내 답: ${q[5]} / 정답: ${q[6]}) - ${q[7] || '복습 내용 없음'}</li>`;
+            });
+          }
+
+          html += `</ul></div>`;
+        });
+
+        container.innerHTML = html;
+      })
+      .catch(err => container.innerHTML = '<p style="color:red; text-align:center;">불러오기 실패: ' + err + '</p>');
+    }
+  </script>
+</body>
+</html>
