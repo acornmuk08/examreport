@@ -87,7 +87,7 @@
 
   <script>
     // ⚠️ 여기에 배포한 Google Apps Script 웹 앱 URL을 붙여넣으세요!
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyegzUO_gXZo9ea9_dbBcCS56Si4se4w3pAKuEEiQMwG9nSAVnrViC1Ssu5d6e4-bwS/exec';
+    const APPS_SCRIPT_URL = '';
 
     document.getElementById('date').value = new Date().toISOString().substring(0, 10);
 
