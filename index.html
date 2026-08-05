@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오답노트 & 성적 관리</title>
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; color: #333; line-height: 1.5; }
+    h2 { text-align: center; color: #2c3e50; }
+    .tab-buttons { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: #f1f1f1; cursor: pointer; font-weight: bold; font-size: 14px; }
+    .tab-btn.active { background: #4CAF50; color: white; }
+    
+    .form-group { margin-bottom: 14px; }
+    label { font-weight: bold; display: block; margin-bottom: 6px; }
+    input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    
+    /* 슬라이더 스타일 */
+    .slider-container { display: flex; align-items: center; gap: 12px; }
+    .slider-container input[type="range"] { flex: 1; cursor: pointer; }
+    .slider-value { font-weight: bold; width: 50px; text-align: right; color: #2e7d32; font-size: 15px; }
+    
+    .mode-container { background: #eef7ff; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #bce0fd; }
+    .q-box { border: 1px dashed #bbb; padding: 12px; margin-bottom: 10px; border-radius: 6px; background: #fafafa; position: relative; }
+    
+    button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; }
+    .btn-submit { background-color: #4CAF50; color: white; width: 100%; font-size: 16px; margin-top: 15px; }
+    .btn-add { background-color: #2196F3; color: white; margin-bottom: 10px; width: 100%; }
+    .btn-load { background-color: #FF9800; color: white; width: 100%; margin-bottom: 15px; }
+    .btn-del { background-color: #f44336; color: white; padding: 4px 8px; font-size: 12px; position: absolute; right: 10px; top: 10px; }
+
+    .record-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 6px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .record-header { font-weight: bold; color: #1976D2; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; font-size: 15px; }
+    .score-badge { background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    
+    .custom-input { margin-top: 6px; display: none; }
+  </style>
+</head>
+<body>
+
+  <h2>📝 오답노트 & 성적 관리</h2>
+
+  <div class="tab-buttons">
+    <button class="tab-btn active" onclick="switchTab('inputTab')">✏️ 시험 입력</button>
+    <button class="tab-btn" onclick="switchTab('loadTab')">📂 기존 기록 불러오기</button>
+  </div>
+
+  <!-- [탭 1] 입력 폼 -->
+  <div id="inputTab">
+    <div class="mode-container">
+      <label>📌 시험 모드 선택</label>
+      <select id="mode" onchange="toggleMode()">
+        <option value="standard">일반 모의고사 (100점 만점 -> 시트1 저장)</option>
+        <option value="half">추가 모드 / 하프모의고사 (만점 자유 설정 -> 시트2 저장)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>📅 날짜</label>
+      <input type="date" id="date">
+    </div>
+
+    <!-- 과목 선택 -->
+    <div class="form-group">
+      <label>📚 과목 선택</label>
+      <select id="subject" onchange="onSubjectChange()">
+        <option value="국어">국어</option>
+        <option value="수학">수학</option>
+        <option value="영어">영어</option>
+        <option value="한국사">한국사</option>
+        <option value="한국지리">한국지리</option>
+        <option value="세계지리">세계지리</option>
+        <option value="중국어">중국어</option>
+      </select>
+    </div>
+
+    <!-- 시험명 선택 -->
+    <div class="form-group">
+      <label>📝 시험명 선택</label>
+      <select id="examNameSelect" onchange="toggleCustomInput('examNameSelect', 'examNameCustom')">
+        <option value="6모">6모</option>
+        <option value="학평">학평</option>
+        <option value="더프">더프</option>
+        <option value="서프">서프</option>
+        <option value="종로">종로</option>
+        <option value="서바이벌">서바이벌</option>
+        <option value="전국서바이벌">전국서바이벌</option>
+        <option value="서바이벌리부트">서바이벌리부트</option>
+        <option value="브릿지">브릿지</option>
+        <option value="전국브릿지">전국브릿지</option>
+        <option value="custom">직접입력</option>
+      </select>
+      <input type="text" id="examNameCustom" class="custom-input" placeholder="시험명을 직접 입력하세요">
+    </div>
+
+    <!-- 점수 슬라이더 (원점수) -->
+    <div class="form-group">
+      <label>💯 내 점수 (원점수 슬라이더)</label>
+      <div class="slider-container">
+        <input type="range" id="rawScore" min="0" max="100" value="80" oninput="updateScoreValue()">
+        <span class="slider-value" id="rawScoreVal">80점</span>
+      </div>
+    </div>
+
+    <!-- 시험 만점 슬라이더 -->
+    <div class="form-group">
+      <label>🎯 시험 만점 (슬라이더)</label>
+      <div class="slider-container">
+        <input type="range" id="maxScore" min="10" max="100" step="5" value="100" oninput="updateScoreValue()">
+        <span class="slider-value" id="maxScoreVal">100점</span>
+      </div>
+    </div>
+
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+    
+    <label>❌ 틀린 문제 입력</label>
+    <button type="button" class="btn-add" onclick="addQuestionBox()">+ 틀린 문제 추가</button>
+    <div id="questionsContainer"></div>
+
+    <button type="button" class="btn-submit" onclick="submitData()">💾 저장하기</button>
+  </div>
+
+  <!-- [탭 2] 기존 기록 불러오기 -->
+  <div id="loadTab" style="display: none;">
+    <button class="btn-load" onclick="fetchRecords()">🔄 기존 기록 불러오기 / 새로고침</button>
+    <div id="recordsContainer">
+      <p style="color: #777; text-align: center;">불러오기 버튼을 누르면 기록을 가져옵니다.</p>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ 배포한 Apps Script 웹 앱 URL을 붙여넣으세요!
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyegzUO_gXZo9ea9_dbBcCS56Si4se4w3pAKuEEiQMwG9nSAVnrViC1Ssu5d6e4-bwS/exec';
+
+    // 과목별 문제 유형 목록
+    const qTypeOptions = {
+      '국어': ['언어', '매체', '독서론', '독서-내용일치', '독서-내용추론', '독서-보기문제', '독서-어휘', '문학-표현상의특징', '문학-내용일치', '문학-내용추론', '문학-외적준거'],
+      '수학': ['계산', '수1-각변환', '수1-삼각함수', '수1-삼각함수활용', '수1-지수로그', '수1-지수로그-그래프', '수1-수열', '수2-극한', '수2-그래프개형추론', '미적-급수', '미적-계산', '미적-음함수/매개변수', '미적-합성함수', '미적-적분', 'custom'],
+      '영어': ['듣기', '18-19', '주제-제목-요지', '단어', '흐름(35)', '빈칸', '순서', '삽입', '틀말유', '문법']
+    };
+
+    // 초기 설정
+    document.getElementById('date').value = new Date().toISOString().substring(0, 10);
+
+    function switchTab(tabId) {
+      document.getElementById('inputTab').style.display = tabId === 'inputTab' ? 'block' : 'none';
+      document.getElementById('loadTab').style.display = tabId === 'loadTab' ? 'block' : 'none';
+      
+      const btns = document.querySelectorAll('.tab-btn');
+      btns[0].classList.toggle('active', tabId === 'inputTab');
+      btns[1].classList.toggle('active', tabId === 'loadTab');
+
+      if (tabId === 'loadTab') fetchRecords();
+    }
+
+    function toggleMode() {
+      const mode = document.getElementById('mode').value;
+      const maxScoreInput = document.getElementById('maxScore');
+      if (mode === 'standard') {
+        maxScoreInput.value = 100;
+      } else {
+        maxScoreInput.value = 50; // 하프모의고사 기본 만점 설정
+      }
+      updateScoreValue();
+    }
+
+    function updateScoreValue() {
+      const raw = document.getElementById('rawScore').value;
+      const max = document.getElementById('maxScore').value;
+      document.getElementById('rawScoreVal').innerText = raw + '점';
+      document.getElementById('maxScoreVal').innerText = max + '점';
+      
+      // 원점수가 만점보다 크면 만점으로 자동 조정
+      if (parseInt(raw) > parseInt(max)) {
+        document.getElementById('rawScore').value = max;
+        document.getElementById('rawScoreVal').innerText = max + '점';
+      }
+    }
+
+    function toggleCustomInput(selectId, customInputId) {
+      const selectEl = document.getElementById(selectId);
+      const customEl = document.getElementById(customInputId);
+      if (selectEl.value === 'custom') {
+        customEl.style.display = 'block';
+      } else {
+        customEl.style.display = 'none';
+      }
+    }
+
+    // 과목 변경 시 틀린 문제 상자의 문제 유형 선택지 자동 업데이트
+    function onSubjectChange() {
+      document.querySelectorAll('.q-box').forEach(box => {
+        updateQTypeOptions(box);
+      });
+    }
+
+    function updateQTypeOptions(qBox) {
+      const subject = document.getElementById('subject').value;
+      const qTypeSelect = qBox.querySelector('.qTypeSelect');
+      const qTypeCustom = qBox.querySelector('.qTypeCustom');
+      
+      qTypeSelect.innerHTML = '';
+      const options = qTypeOptions[subject];
+
+      if (!options) {
+        // 한국사, 한국지리, 세계지리, 중국어 등 -> 직접 입력 처리
+        qTypeSelect.style.display = 'none';
+        qTypeCustom.style.display = 'block';
+        qTypeCustom.value = '';
+      } else {
+        qTypeSelect.style.display = 'block';
+        qTypeCustom.style.display = 'none';
+
+        options.forEach(opt => {
+          const el = document.createElement('option');
+          el.value = opt;
+          el.innerText = (opt === 'custom') ? '직접입력' : opt;
+          qTypeSelect.appendChild(el);
+        });
+      }
+    }
+
+    function addQuestionBox() {
+      const container = document.getElementById('questionsContainer');
+      const box = document.createElement('div');
+      box.className = 'q-box';
+      box.innerHTML = `
+        <button type="button" class="btn-del" onclick="this.parentElement.remove()">삭제</button>
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <input type="text" class="qNum" placeholder="문항번호(예: 15번)" style="width: 30%;">
+          <input type="text" class="myAns" placeholder="내 답" style="width: 35%;">
+          <input type="text" class="correctAns" placeholder="정답" style="width: 35%;">
+        </div>
+        <div style="margin-bottom: 6px;">
+          <label style="font-size: 12px; margin-bottom: 2px;">문제 유형</label>
+          <select class="qTypeSelect" onchange="toggleQTypeCustom(this)"></select>
+          <input type="text" class="qTypeCustom custom-input" placeholder="유형을 직접 입력하세요">
+        </div>
+        <textarea class="reason" placeholder="오답 원인 / 개념 정리" rows="2"></textarea>
+      `;
+      container.appendChild(box);
+      updateQTypeOptions(box);
+    }
+
+    function toggleQTypeCustom(selectEl) {
+      const customEl = selectEl.parentElement.querySelector('.qTypeCustom');
+      if (selectEl.value === 'custom') {
+        customEl.style.display = 'block';
+      } else {
+        customEl.style.display = 'none';
+      }
+    }
+
+    function submitData() {
+      // 시험명 결정
+      const examSelect = document.getElementById('examNameSelect').value;
+      const examName = (examSelect === 'custom') ? document.getElementById('examNameCustom').value : examSelect;
+
+      if (!examName) {
+        alert('시험명을 입력 또는 선택해주세요.');
+        return;
+      }
+
+      // 오답 목록 추출
+      const wrongQuestions = [];
+      document.querySelectorAll('.q-box').forEach(box => {
+        const qNum = box.querySelector('.qNum').value;
+        const subject = document.getElementById('subject').value;
+        
+        // 문제 유형 추출
+        let qType = '';
+        if (qTypeOptions[subject]) {
+          const typeSelect = box.querySelector('.qTypeSelect').value;
+          qType = (typeSelect === 'custom') ? box.querySelector('.qTypeCustom').value : typeSelect;
+        } else {
+          qType = box.querySelector('.qTypeCustom').value;
+        }
+
+        const reasonText = box.querySelector('.reason').value;
+        // 오답 원인란에 문제 유형 병합
+        const fullReason = qType ? `[유형: ${qType}] ${reasonText}` : reasonText;
+
+        wrongQuestions.push({
+          qNum: qNum,
+          myAns: box.querySelector('.myAns').value,
+          correctAns: box.querySelector('.correctAns').value,
+          reason: fullReason
+        });
+      });
+
+      const payload = {
+        mode: document.getElementById('mode').value,
+        date: document.getElementById('date').value,
+        examName: examName,
+        subject: document.getElementById('subject').value,
+        rawScore: document.getElementById('rawScore').value,
+        maxScore: document.getElementById('maxScore').value,
+        wrongQuestions: wrongQuestions
+      };
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) {
+          document.getElementById('questionsContainer').innerHTML = '';
+        }
+      })
+      .catch(err => alert('저장 중 오류가 발생했습니다: ' + err));
+    }
+
+    function fetchRecords() {
+      const container = document.getElementById('recordsContainer');
+      container.innerHTML = '<p style="text-align:center;">기록을 불러오는 중...</p>';
+
+      fetch(APPS_SCRIPT_URL)
+      .then(res => res.json())
+      .then(res => {
+        if (!res.success || !res.data.scores || res.data.scores.length === 0) {
+          container.innerHTML = '<p style="color:#777; text-align:center;">저장된 시험 기록이 없습니다.</p>';
+          return;
+        }
+
+        const data = res.data;
+        let html = '';
+        const scoresReversed = [...data.scores].reverse();
+
+        scoresReversed.forEach(row => {
+          const [examId, date, examName, modeStr, subject, rawScore, maxScore, percentage] = row;
+          
+          const wrongList1 = data.sheet1Data.filter(q => q[0] === examId);
+          const wrongList2 = data.sheet2Data.filter(q => q[0] === examId);
+          const wrongList = [...wrongList1, ...wrongList2];
+
+          html += `
+            <div class="record-card">
+              <div class="record-header">[${modeStr}] ${examName} (${subject || '과목 미기재'})</div>
+              <div>📅 날짜: ${date ? date.substring(0, 10) : '-'}</div>
+              <div>📊 점수: <span class="score-badge">${rawScore}점 / ${maxScore}점 (${percentage})</span></div>
+              <div style="margin-top: 8px; font-weight: bold;">❌ 오답 목록 (${wrongList.length}개):</div>
+              <ul style="margin: 4px 0; padding-left: 20px; font-size: 13px; color: #444;">
+          `;
+
+          if (wrongList.length === 0) {
+            html += `<li>기록된 오답 문제가 없습니다.</li>`;
+          } else {
+            wrongList.forEach(q => {
+              html += `<li><b>${q[4]}</b> (내 답: ${q[5]} / 정답: ${q[6]}) - ${q[7] || '복습 내용 없음'}</li>`;
+            });
+          }
+
+          html += `</ul></div>`;
+        });
+
+        container.innerHTML = html;
+      })
+      .catch(err => container.innerHTML = '<p style="color:red; text-align:center;">불러오기 실패: ' + err + '</p>');
+    }
+  </script>
+</body>
+</html>
