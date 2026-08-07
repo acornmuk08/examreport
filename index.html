@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오답노트 & 성적 분석 시스템</title>
+  <!-- Chart.js 라이브러리 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', Arial, sans-serif; max-width: 680px; margin: 20px auto; padding: 15px; color: #333; line-height: 1.5; }
+    h2 { text-align: center; color: #2c3e50; }
+    .tab-buttons { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: #f1f1f1; cursor: pointer; font-weight: bold; font-size: 14px; }
+    .tab-btn.active { background: #4CAF50; color: white; }
+    
+    .form-group { margin-bottom: 14px; }
+    label { font-weight: bold; display: block; margin-bottom: 6px; }
+    input[type="text"], input[type="number"], input[type="date"], select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    
+    .slider-container { display: flex; align-items: center; gap: 12px; }
+    .slider-container input[type="range"] { flex: 1; cursor: pointer; }
+    .slider-value { font-weight: bold; width: 50px; text-align: right; color: #2e7d32; font-size: 15px; }
+    
+    .mode-container { background: #eef7ff; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #bce0fd; }
+    .grade-preview { background: #f9f9f9; padding: 10px; border-radius: 4px; border: 1px solid #ddd; margin-top: 6px; font-weight: bold; color: #1565C0; }
+    
+    .q-box { border: 1px dashed #bbb; padding: 12px; margin-bottom: 10px; border-radius: 6px; background: #fafafa; position: relative; }
+    
+    button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; }
+    .btn-submit { background-color: #4CAF50; color: white; width: 100%; font-size: 16px; margin-top: 15px; }
+    .btn-add { background-color: #2196F3; color: white; margin-bottom: 10px; width: 100%; }
+    .btn-load { background-color: #FF9800; color: white; width: 100%; margin-bottom: 15px; }
+    .btn-del { background-color: #f44336; color: white; padding: 4px 8px; font-size: 12px; position: absolute; right: 10px; top: 10px; }
+
+    .record-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 6px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .record-header { font-weight: bold; color: #1976D2; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; font-size: 15px; }
+    .score-badge { background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .grade-badge { background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    
+    .custom-input { margin-top: 6px; display: none; }
+    .chart-box { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 20px; }
+    .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .search-box { margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+  <h2>📝 오답노트 & 성적 분석 시스템</h2>
+
+  <div class="tab-buttons">
+    <button class="tab-btn active" onclick="switchTab('inputTab')">✏️ 시험 입력</button>
+    <button class="tab-btn" onclick="switchTab('loadTab')">📊 성적 & 오답 분석</button>
+  </div>
+
+  <!-- [탭 1] 입력 폼 -->
+  <div id="inputTab">
+    <div class="mode-container">
+      <label>📌 시험 모드 선택</label>
+      <select id="mode" onchange="toggleMode()">
+        <option value="standard">일반 모의고사 (100점 만점 -> 시트1 저장)</option>
+        <option value="half">추가 모드 / 하프모의고사 (만점 자유 설정 -> 시트2 저장)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>📅 날짜</label>
+      <input type="date" id="date">
+    </div>
+
+    <!-- 과목 선택 -->
+    <div class="form-group">
+      <label>📚 과목 선택</label>
+      <select id="subject" onchange="onSubjectChange(); calculateGrade();">
+        <option value="국어">국어</option>
+        <option value="수학">수학</option>
+        <option value="영어">영어</option>
+        <option value="한국사">한국사</option>
+        <option value="한국지리">한국지리</option>
+        <option value="세계지리">세계지리</option>
+        <option value="중국어">중국어</option>
+      </select>
+    </div>
+
+    <!-- 시험명 & 회차 선택 -->
+    <div style="display: flex; gap: 10px;">
+      <div class="form-group" style="flex: 2;">
+        <label>📝 시험명</label>
+        <select id="examNameSelect" onchange="toggleCustomInput('examNameSelect', 'examNameCustom')">
+          <option value="6모">6모</option>
+          <option value="학평">학평</option>
+          <option value="더프">더프</option>
+          <option value="서프">서프</option>
+          <option value="종로">종로</option>
+          <option value="서바이벌">서바이벌</option>
+          <option value="전국서바이벌">전국서바이벌</option>
+          <option value="서바이벌리부트">서바이벌리부트</option>
+          <option value="브릿지">브릿지</option>
+          <option value="전국브릿지">전국브릿지</option>
+          <option value="custom">직접입력</option>
+        </select>
+        <input type="text" id="examNameCustom" class="custom-input" placeholder="시험명 입력">
+      </div>
+      
+      <div class="form-group" style="flex: 1;">
+        <label>🔢 회차 (선택)</label>
+        <input type="number" id="round" placeholder="예: 1" min="1">
+      </div>
+    </div>
+
+    <!-- 점수 슬라이더 -->
+    <div class="form-group">
+      <label>💯 내 점수 (원점수 슬라이더)</label>
+      <div class="slider-container">
+        <input type="range" id="rawScore" min="0" max="100" value="80" oninput="updateScoreValue(); calculateGrade();">
+        <span class="slider-value" id="rawScoreVal">80점</span>
+      </div>
+    </div>
+
+    <!-- 시험 만점 슬라이더 -->
+    <div class="form-group">
+      <label>🎯 시험 만점 (슬라이더)</label>
+      <div class="slider-container">
+        <input type="range" id="maxScore" min="10" max="100" step="5" value="100" oninput="updateScoreValue(); calculateGrade();">
+        <span class="slider-value" id="maxScoreVal">100점</span>
+      </div>
+    </div>
+
+    <!-- 1컷 입력 및 예상 등급 -->
+    <div class="form-group">
+      <label>🥇 1등급 컷 점수 입력 (선택)</label>
+      <input type="number" id="cut1" placeholder="예: 88" oninput="calculateGrade()">
+      <div id="gradePreview" class="grade-preview">예상 등급: 1컷 미입력 시 미산출</div>
+    </div>
+
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+    
+    <label>❌ 틀린 문제 입력</label>
+    <button type="button" class="btn-add" onclick="addQuestionBox()">+ 틀린 문제 추가</button>
+    <div id="questionsContainer"></div>
+
+    <button type="button" class="btn-submit" onclick="submitData()">💾 저장하기</button>
+  </div>
+
+  <!-- [탭 2] 분석 및 기록 -->
+  <div id="loadTab" style="display: none;">
+    <button class="btn-load" onclick="fetchRecords()">🔄 기존 기록 불러오기 / 새로고침</button>
+    
+    <!-- 1. 성적 추이 그래프 (꺾은선) -->
+    <div class="chart-box">
+      <label style="font-size: 16px; margin-bottom: 10px; text-align: center;">📈 과목 및 모드별 성적 추이</label>
+      <div class="filter-grid">
+        <div>
+          <label style="font-size: 12px;">과목 필터</label>
+          <select id="lineSubjectFilter" onchange="renderLineChart()">
+            <option value="ALL">전체 과목</option>
+            <option value="국어">국어</option>
+            <option value="수학">수학</option>
+            <option value="영어">영어</option>
+            <option value="한국사">한국사</option>
+            <option value="한국지리">한국지리</option>
+            <option value="세계지리">세계지리</option>
+            <option value="중국어">중국어</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 12px;">시험 모드 필터</label>
+          <select id="lineModeFilter" onchange="renderLineChart()">
+            <option value="ALL">전체 (일반 + 하프)</option>
+            <option value="standard">일반 모의고사만 보기</option>
+            <option value="half">하프 모의고사만 보기</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-grid">
+        <div>
+          <label style="font-size: 12px;">특정 시험명만 모아보기</label>
+          <select id="lineExamSeriesFilter" onchange="renderLineChart()">
+            <option value="ALL">전체 시험 (기본)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 12px;">조회 시작일</label>
+          <input type="date" id="lineStartDate" onchange="renderLineChart()">
+        </div>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 12px;">조회 종료일</label>
+        <input type="date" id="lineEndDate" onchange="renderLineChart()">
+      </div>
+
+      <canvas id="scoreLineChart" height="180"></canvas>
+    </div>
+
+    <!-- 2. 오답 유형 분석 그래프 (원그래프) -->
+    <div class="chart-box">
+      <label style="font-size: 16px; margin-bottom: 10px; text-align: center;">🍩 과목별 오답 유형 비율 분석</label>
+      <div class="filter-grid">
+        <div>
+          <label style="font-size: 12px;">과목 선택</label>
+          <select id="pieSubjectFilter" onchange="renderPieChart()">
+            <option value="국어">국어</option>
+            <option value="수학">수학</option>
+            <option value="영어">영어</option>
+            <option value="한국지리">한국지리</option>
+            <option value="세계지리">세계지리</option>
+            <option value="한국사">한국사</option>
+            <option value="중국어">중국어</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 12px;">조회 시작일</label>
+          <input type="date" id="startDate" onchange="renderPieChart()">
+        </div>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 12px;">조회 종료일</label>
+        <input type="date" id="endDate" onchange="renderPieChart()">
+      </div>
+      <div style="max-width: 320px; margin: 0 auto;">
+        <canvas id="typePieChart"></canvas>
+      </div>
+    </div>
+
+    <!-- 3. 개별 시험 기록 검색 및 목록 -->
+    <div class="chart-box">
+      <label style="font-size: 16px; margin-bottom: 10px;">🔍 개별 시험 상세 기록 검색</label>
+      <div class="search-box">
+        <input type="text" id="recordSearchInput" placeholder="시험명 또는 과목 검색 (예: 전국서바이벌, 국어)..." oninput="filterAndRenderRecords()">
+      </div>
+      <div id="recordsContainer">
+        <p style="color: #777; text-align: center;">불러오기 버튼을 누르면 기록을 가져옵니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJFVzJNhTYig-gah2HBRnT3_K0GsAgpvtdJ_NU8Ai89gK2JzaggD8WaemQj7ujaDVu/exec'; // ⚠️ 본인의 앱스스크립트 주소로 변경
+
+    const subjectColors = {
+      '국어': '#E53935',
+      '수학': '#1E88E5',
+      '영어': '#4CAF50',
+      '한국사': '#FB8C00',
+      '한국지리': '#8E24AA',
+      '세계지리': '#00ACC1',
+      '중국어': '#D81B60'
+    };
+
+    const qTypeOptions = {
+      '국어': ['언어', '매체', '독서론', '독서-내용일치', '독서-내용추론', '독서-보기문제', '독서-어휘', '문학-표현상의특징', '문학-내용일치', '문학-내용추론', '문학-외적준거'],
+      '수학': ['계산', '수1-각변환', '수1-삼각함수', '수1-삼각함수활용', '수1-지수로그', '수1-지수로그-그래프', '수1-수열', '수2-극한', '수2-그래프개형추론', '미적-급수', '미적-계산', '미적-음함수/매개변수', '미적-합성함수', '미적-적분', 'custom'],
+      '영어': ['듣기', '18-19', '주제-제목-요지', '단어', '흐름(35)', '빈칸', '순서', '삽입', '틀말유', '문법'],
+      '한국지리': ['위치/지리정보/고지도', '산지/하천/해안/화산/카르스트', '기후', '기후변화', '교통/도시발달', '지역 개발/자원', '농업/공업', '인구분포/이동/외국인', '지역지리', 'custom'],
+      '세계지리': ['고지도/세계화', '기후', '지형', '종교', '인구', '도시화/도시체계', '식량/가축 자원', '에너지', '몬순/오세아니아', '건조/북아프리카', '유럽/북아메리카', '사하라이남/라틴', '지역지리', 'custom']
+    };
+
+    let globalFetchedData = null;
+    let lineChartInstance = null;
+    let pieChartInstance = null;
+
+    // 📌 로컬 타임존 왜곡을 원천 방지하는 YYYY-MM-DD 생성 함수
+    function getLocalDateString(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    const today = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+    
+    const todayStr = getLocalDateString(today);
+    const oneYearAgoStr = getLocalDateString(oneYearAgo);
+
+    document.getElementById('date').value = todayStr;
+    document.getElementById('startDate').value = oneYearAgoStr;
+    document.getElementById('endDate').value = todayStr;
+    document.getElementById('lineStartDate').value = oneYearAgoStr;
+    document.getElementById('lineEndDate').value = todayStr;
+
+    function switchTab(tabId) {
+      document.getElementById('inputTab').style.display = tabId === 'inputTab' ? 'block' : 'none';
+      document.getElementById('loadTab').style.display = tabId === 'loadTab' ? 'block' : 'none';
+      
+      const btns = document.querySelectorAll('.tab-btn');
+      btns[0].classList.toggle('active', tabId === 'inputTab');
+      btns[1].classList.toggle('active', tabId === 'loadTab');
+
+      if (tabId === 'loadTab') fetchRecords();
+    }
+
+    function toggleMode() {
+      const mode = document.getElementById('mode').value;
+      const maxScoreInput = document.getElementById('maxScore');
+      maxScoreInput.value = (mode === 'standard') ? 100 : 50;
+      updateScoreValue();
+      calculateGrade();
+    }
+
+    function updateScoreValue() {
+      const raw = document.getElementById('rawScore').value;
+      const max = document.getElementById('maxScore').value;
+      document.getElementById('rawScoreVal').innerText = raw + '점';
+      document.getElementById('maxScoreVal').innerText = max + '점';
+      
+      if (parseInt(raw) > parseInt(max)) {
+        document.getElementById('rawScore').value = max;
+        document.getElementById('rawScoreVal').innerText = max + '점';
+      }
+    }
+
+    function calculateGrade() {
+      const subject = document.getElementById('subject').value;
+      const raw = Number(document.getElementById('rawScore').value);
+      const cut1Val = document.getElementById('cut1').value;
+      const previewEl = document.getElementById('gradePreview');
+
+      if (cut1Val === '' || isNaN(cut1Val)) {
+        previewEl.innerText = '예상 등급: 1컷 미입력 시 미산출';
+        return '';
+      }
+
+      const cut1 = Number(cut1Val);
+      const dropMap = { '국어': 5, '수학': 8, '영어': 10, '한국지리': 3, '세계지리': 3, '한국사': 5, '중국어': 5 };
+      const drop = dropMap[subject] || 5;
+      const cut2 = cut1 - drop;
+
+      let grade = (raw >= cut1) ? '1등급' : (raw >= cut2 ? '2등급' : '3등급 이하');
+      previewEl.innerText = `예상 등급: ${grade} (1컷: ${cut1}점 / 2컷: ${cut2}점 기준)`;
+      return grade;
+    }
+
+    function toggleCustomInput(selectId, customInputId) {
+      const selectEl = document.getElementById(selectId);
+      const customEl = document.getElementById(customInputId);
+      customEl.style.display = (selectEl.value === 'custom') ? 'block' : 'none';
+    }
+
+    function onSubjectChange() {
+      document.querySelectorAll('.q-box').forEach(box => updateQTypeOptions(box));
+    }
+
+    function updateQTypeOptions(qBox) {
+      const subject = document.getElementById('subject').value;
+      const qTypeSelect = qBox.querySelector('.qTypeSelect');
+      const qTypeCustom = qBox.querySelector('.qTypeCustom');
+      
+      qTypeSelect.innerHTML = '';
+      const options = qTypeOptions[subject];
+
+      if (!options) {
+        qTypeSelect.style.display = 'none';
+        qTypeCustom.style.display = 'block';
+        qTypeCustom.value = '';
+      } else {
+        qTypeSelect.style.display = 'block';
+        qTypeCustom.style.display = 'none';
+
+        options.forEach(opt => {
+          const el = document.createElement('option');
+          el.value = opt;
+          el.innerText = (opt === 'custom') ? '직접입력' : opt;
+          qTypeSelect.appendChild(el);
+        });
+      }
+    }
+
+    function addQuestionBox() {
+      const container = document.getElementById('questionsContainer');
+      const box = document.createElement('div');
+      box.className = 'q-box';
+      box.innerHTML = `
+        <button type="button" class="btn-del" onclick="this.parentElement.remove()">삭제</button>
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <input type="text" class="qNum" placeholder="문항번호" style="width: 30%;">
+          <input type="text" class="myAns" placeholder="내 답" style="width: 35%;">
+          <input type="text" class="correctAns" placeholder="정답" style="width: 35%;">
+        </div>
+        <div style="margin-bottom: 6px;">
+          <label style="font-size: 12px; margin-bottom: 2px;">문제 유형</label>
+          <select class="qTypeSelect" onchange="toggleQTypeCustom(this)"></select>
+          <input type="text" class="qTypeCustom custom-input" placeholder="유형 직접 입력">
+        </div>
+        <textarea class="reason" placeholder="오답 원인 / 개념 정리" rows="2"></textarea>
+      `;
+      container.appendChild(box);
+      updateQTypeOptions(box);
+    }
+
+    function toggleQTypeCustom(selectEl) {
+      const customEl = selectEl.parentElement.querySelector('.qTypeCustom');
+      customEl.style.display = (selectEl.value === 'custom') ? 'block' : 'none';
+    }
+
+    function submitData() {
+      const examSelect = document.getElementById('examNameSelect').value;
+      let examName = (examSelect === 'custom') ? document.getElementById('examNameCustom').value : examSelect;
+      const roundVal = document.getElementById('round').value;
+
+      if (!examName) {
+        alert('시험명을 입력 또는 선택해주세요.');
+        return;
+      }
+
+      if (roundVal) examName += ` ${roundVal}회차`;
+
+      const calculatedGrade = calculateGrade();
+      const cut1Val = document.getElementById('cut1').value;
+
+      const wrongQuestions = [];
+      document.querySelectorAll('.q-box').forEach(box => {
+        const qNum = box.querySelector('.qNum').value;
+        const subject = document.getElementById('subject').value;
+        
+        let qType = '';
+        if (qTypeOptions[subject]) {
+          const typeSelect = box.querySelector('.qTypeSelect').value;
+          qType = (typeSelect === 'custom') ? box.querySelector('.qTypeCustom').value : typeSelect;
+        } else {
+          qType = box.querySelector('.qTypeCustom').value;
+        }
+
+        const reasonText = box.querySelector('.reason').value;
+        const fullReason = qType ? `[유형: ${qType}] ${reasonText}` : reasonText;
+
+        wrongQuestions.push({
+          qNum: qNum,
+          myAns: box.querySelector('.myAns').value,
+          correctAns: box.querySelector('.correctAns').value,
+          reason: fullReason
+        });
+      });
+
+      const payload = {
+        mode: document.getElementById('mode').value,
+        date: document.getElementById('date').value,
+        examName: examName,
+        subject: document.getElementById('subject').value,
+        rawScore: document.getElementById('rawScore').value,
+        maxScore: document.getElementById('maxScore').value,
+        cut1: cut1Val || '-',
+        grade: calculatedGrade || '-',
+        wrongQuestions: wrongQuestions
+      };
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) {
+          document.getElementById('round').value = '';
+          document.getElementById('cut1').value = '';
+          document.getElementById('questionsContainer').innerHTML = '';
+          calculateGrade();
+        }
+      })
+      .catch(err => alert('저장 중 오류가 발생했습니다: ' + err));
+    }
+
+    function fetchRecords() {
+      const container = document.getElementById('recordsContainer');
+      container.innerHTML = '<p style="text-align:center;">기록을 불러오는 중...</p>';
+
+      fetch(APPS_SCRIPT_URL)
+      .then(res => res.json())
+      .then(res => {
+        if (!res.success || !res.data.scores || res.data.scores.length === 0) {
+          container.innerHTML = '<p style="color:#777; text-align:center;">저장된 시험 기록이 없습니다.</p>';
+          return;
+        }
+
+        globalFetchedData = res.data;
+        updateExamSeriesDropdown();
+        renderLineChart();
+        renderPieChart();
+        filterAndRenderRecords();
+      })
+      .catch(err => container.innerHTML = '<p style="color:red; text-align:center;">불러오기 실패: ' + err + '</p>');
+    }
+
+    // 📌 검색어 및 최신순 10개 제한 적용 렌더링 함수
+    function filterAndRenderRecords() {
+      if (!globalFetchedData || !globalFetchedData.scores) return;
+      const container = document.getElementById('recordsContainer');
+      const searchQuery = document.getElementById('recordSearchInput').value.toLowerCase().trim();
+
+      // 날짜 기준 최신순 정렬 (역순 정렬)
+      let sortedScores = [...globalFetchedData.scores].reverse();
+
+      // 검색어가 있는 경우 필터링
+      if (searchQuery) {
+        sortedScores = sortedScores.filter(row => {
+          const [examId, date, examName, modeStr, subject, rawScore, maxScore, percentage, cut1, grade] = row;
+          return (examName && examName.toLowerCase().includes(searchQuery)) ||
+                 (subject && subject.toLowerCase().includes(searchQuery)) ||
+                 (date && date.includes(searchQuery));
+        });
+      } else {
+        // 검색어가 없을 때는 메인 화면에 최신 10개만 표시
+        sortedScores = sortedScores.slice(0, 10);
+      }
+
+      if (sortedScores.length === 0) {
+        container.innerHTML = '<p style="color:#777; text-align:center;">검색된 기록이 없습니다.</p>';
+        return;
+      }
+
+      let html = '';
+      if (!searchQuery) {
+        html += `<p style="font-size: 12px; color: #666; margin-bottom: 8px;">* 최신 시험 기록 10개만 표시 중입니다. (전체 조회는 위 검색창에 시험명이나 과목명을 입력하세요)</p>`;
+      }
+
+      sortedScores.forEach(row => {
+        const [examId, date, examName, modeStr, subject, rawScore, maxScore, percentage, cut1, grade] = row;
+        const displayDate = date ? date.substring(0, 10) : '-'; // 📌 날짜 밀림 방지 추출
+        
+        const wrongList1 = globalFetchedData.sheet1Data.filter(q => q[0] === examId);
+        const wrongList2 = globalFetchedData.sheet2Data.filter(q => q[0] === examId);
+        const wrongList = [...wrongList1, ...wrongList2];
+
+        html += `
+          <div class="record-card">
+            <div class="record-header">[${modeStr}] ${examName} (${subject || '과목 미기재'})</div>
+            <div>📅 날짜: ${displayDate}</div>
+            <div>📊 점수: <span class="score-badge">${rawScore}점 / ${maxScore}점 (${percentage})</span> ${grade ? `<span class="grade-badge">${grade}</span>` : ''}</div>
+            ${cut1 && cut1 !== '-' ? `<div style="font-size: 13px; color: #555;">🥇 1컷 기준: ${cut1}점</div>` : ''}
+            <div style="margin-top: 8px; font-weight: bold;">❌ 오답 목록 (${wrongList.length}개):</div>
+            <ul style="margin: 4px 0; padding-left: 20px; font-size: 13px; color: #444;">
+        `;
+
+        if (wrongList.length === 0) {
+          html += `<li>기록된 오답 문제가 없습니다.</li>`;
+        } else {
+          wrongList.forEach(q => {
+            html += `<li><b>${q[4]}</b> (내 답: ${q[5]} / 정답: ${q[6]}) - ${q[7] || '복습 내용 없음'}</li>`;
+          });
+        }
+
+        html += `</ul></div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function updateExamSeriesDropdown() {
+      if (!globalFetchedData || !globalFetchedData.scores) return;
+      const selectEl = document.getElementById('lineExamSeriesFilter');
+      const currentVal = selectEl.value;
+
+      const seriesSet = new Set();
+      globalFetchedData.scores.forEach(s => {
+        const examName = s[2];
+        const cleanName = examName.replace(/\s+\d+회차$/, '').trim();
+        seriesSet.add(cleanName);
+      });
+
+      selectEl.innerHTML = '<option value="ALL">전체 시험 (기본)</option>';
+      seriesSet.forEach(series => {
+        const opt = document.createElement('option');
+        opt.value = series;
+        opt.innerText = series + ' 시리즈만 보기';
+        selectEl.appendChild(opt);
+      });
+
+      selectEl.value = currentVal;
+    }
+
+    function renderLineChart() {
+      if (!globalFetchedData || !globalFetchedData.scores) return;
+
+      const filterSubject = document.getElementById('lineSubjectFilter').value;
+      const filterMode = document.getElementById('lineModeFilter').value;
+      const filterSeries = document.getElementById('lineExamSeriesFilter').value;
+      const startDate = document.getElementById('lineStartDate').value;
+      const endDate = document.getElementById('lineEndDate').value;
+
+      let rawScores = [...globalFetchedData.scores];
+
+      if (filterSubject !== 'ALL') {
+        rawScores = rawScores.filter(s => s[4] === filterSubject);
+      }
+      if (filterMode === 'standard') {
+        rawScores = rawScores.filter(s => s[3] === '일반모의고사');
+      } else if (filterMode === 'half') {
+        rawScores = rawScores.filter(s => s[3] === '하프/추가모드');
+      }
+      if (filterSeries !== 'ALL') {
+        rawScores = rawScores.filter(s => {
+          const cleanName = s[2].replace(/\s+\d+회차$/, '').trim();
+          return cleanName === filterSeries;
+        });
+      }
+      if (startDate && endDate) {
+        rawScores = rawScores.filter(s => {
+          const d = s[1] ? s[1].substring(0, 10) : '';
+          return d >= startDate && d <= endDate;
+        });
+      }
+
+      if (rawScores.length === 0) {
+        if (lineChartInstance) lineChartInstance.destroy();
+        return;
+      }
+
+      const examMap = {};
+      const examDateMap = {};
+      
+      rawScores.forEach(s => {
+        const examName = s[2];
+        const dateStr = s[1] ? s[1].substring(0, 10) : '';
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        
+        if (!examMap[examName] || examMap[examName] > dateObj) {
+          examMap[examName] = dateObj;
+          examDateMap[examName] = dateStr;
+        }
+      });
+
+      const uniqueExams = Object.keys(examMap).sort((a, b) => {
+        const dateA = examMap[a];
+        const dateB = examMap[b];
+        
+        if (dateA < dateB) return -1;
+        if (dateA > dateB) return 1;
+        
+        const roundA = a.match(/(\d+)회차/);
+        const roundB = b.match(/(\d+)회차/);
+        if (roundA && roundB) {
+          return parseInt(roundA[1]) - parseInt(roundB[1]);
+        }
+        
+        return a.localeCompare(b);
+      });
+
+      const subjectsInScores = [...new Set(rawScores.map(s => s[4]))];
+      let datasets = [];
+      const isOverallHalf = (filterMode === 'half' && filterSeries === 'ALL');
+
+      subjectsInScores.forEach(sub => {
+        const color = subjectColors[sub] || '#333333';
+
+        const scoreData = uniqueExams.map(exam => {
+          const match = rawScores.find(s => s[2] === exam && s[4] === sub);
+          if (!match) return null;
+          
+          if (isOverallHalf) {
+            const raw = Number(match[5]);
+            const max = Number(match[6]);
+            return max > 0 ? Number(((raw / max) * 100).toFixed(1)) : null;
+          } else {
+            return Number(match[5]);
+          }
+        });
+
+        const labelSuffix = isOverallHalf ? ' (백분율 %)' : ' (내 점수)';
+        datasets.push({
+          label: `${sub}${labelSuffix}`,
+          data: scoreData,
+          borderColor: color,
+          backgroundColor: color,
+          borderWidth: 2,
+          fill: false,
+          tension: 0.2,
+          spanGaps: true
+        });
+
+        if (!isOverallHalf) {
+          const cutScoreData = uniqueExams.map(exam => {
+            const match = rawScores.find(s => s[2] === exam && s[4] === sub);
+            if (!match || !match[8] || match[8] === '-') return null;
+            return Number(match[8]);
+          });
+
+          datasets.push({
+            label: `${sub} (1등급 컷)`,
+            data: cutScoreData,
+            borderColor: color,
+            borderDash: [5, 5],
+            borderWidth: 1.5,
+            fill: false,
+            tension: 0.2,
+            spanGaps: true
+          });
+        }
+      });
+
+      const ctx = document.getElementById('scoreLineChart').getContext('2d');
+      if (lineChartInstance) lineChartInstance.destroy();
+
+      let maxYValue = 100;
+      let stepSizeVal = 20;
+
+      if (isOverallHalf) {
+        maxYValue = 100;
+        stepSizeVal = 10;
+      } else if (filterMode === 'half') {
+        const maxScoresInFiltered = rawScores.map(s => Number(s[6])).filter(n => !isNaN(n));
+        maxYValue = maxScoresInFiltered.length > 0 ? Math.max(...maxScoresInFiltered) : 50;
+        stepSizeVal = 10;
+      }
+
+      lineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: uniqueExams,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: { 
+              mode: 'index', 
+              intersect: false,
+              callbacks: {
+                title: function(tooltipItems) {
+                  const examName = tooltipItems[0].label;
+                  const examDate = examDateMap[examName] || '';
+                  return examDate ? `${examName} (시험일: ${examDate})` : examName;
+                }
+              }
+            }
+          },
+          scales: {
+            y: { 
+              min: 0, 
+              max: maxYValue,
+              ticks: {
+                stepSize: stepSizeVal,
+                callback: function(value) {
+                  return isOverallHalf ? value + '%' : value + '점';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderPieChart() {
+      if (!globalFetchedData) return;
+
+      const targetSubject = document.getElementById('pieSubjectFilter').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      const allWrongData = [...globalFetchedData.sheet1Data, ...globalFetchedData.sheet2Data];
+      const typeCounts = {};
+
+      allWrongData.forEach(q => {
+        const qDate = q[1] ? q[1].substring(0, 10) : '';
+        const qSubject = q[3];
+        const reason = q[7] || '';
+
+        if (qSubject === targetSubject && qDate >= startDate && qDate <= endDate) {
+          const match = reason.match(/\[유형:\s*(.*?)\]/);
+          const typeName = match ? match[1].trim() : '기타/미지정';
+          typeCounts[typeName] = (typeCounts[typeName] || 0) + 1;
+        }
+      });
+
+      const labels = Object.keys(typeCounts);
+      const dataValues = Object.values(typeCounts);
+
+      const ctx = document.getElementById('typePieChart').getContext('2d');
+      if (pieChartInstance) pieChartInstance.destroy();
+
+      if (labels.length === 0) {
+        pieChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['데이터 없음'],
+            datasets: [{ data: [1], backgroundColor: ['#e0e0e0'] }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'bottom' },
+              tooltip: { enabled: false }
+            }
+          }
+        });
+        return;
+      }
+
+      const bgColors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+        '#FF9F40', '#E7E9ED', '#8AC926', '#1982C4', '#6A4C93'
+      ];
+
+      pieChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: dataValues,
+            backgroundColor: bgColors.slice(0, labels.length)
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
